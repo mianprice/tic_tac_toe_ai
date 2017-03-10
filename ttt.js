@@ -1,3 +1,5 @@
+
+// VARIABLE DECLARATIONS
 var winner = '';
 var counter = [0,0,0];
 var possible = ["one","two","three","four","five","six","seven","eight","nine"];
@@ -16,6 +18,7 @@ var combos = [
   [2,4,6]
 ];
 
+// HELPER FUNCTIONS
 function indexToID(ind) {
   switch (ind) {
     case 0:
@@ -39,9 +42,131 @@ function indexToID(ind) {
   }
 }
 
-// function makeNextMove(board, piece) {
-//
-// }
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
+// GAME LOGIC
+function reset() {
+  winner = '';
+  $(".winner").toggle();
+  $(".cell").empty();
+  $(".board").on('click','.cell', function() {
+    if (cpuThinking) {
+      return;
+    }
+    var t = $(this).text();
+    if (t === "O") {
+      return;
+    }
+    if (t.length === 0) {
+      t = "X";
+    }
+    $(this).text(t);
+    var arr = getGrid();
+    if (checkBoard()) {
+      displayWinner();
+    } else {
+      cpuMove();
+    }
+  });
+}
+
+function displayWinner() {
+  var winString = "";
+  if (winner === "d") {
+    winString = "It's a draw!";
+  } else {
+    winString = winner === 'X' ? "You win!" : "CPU wins!";
+  }
+  updateCounter(winner);
+  var playButton = "<div class='play-again'>Play Again</div>";
+  $(".winner").text(winString);
+  $(".winner").append(playButton);
+  $(".winner").toggle();
+  $(".board").off('click','.cell');
+}
+
+function updateCounter(winner) {
+  if (winner === 'X') {
+    counter[0] += 1;
+  } else if (winner === 'O') {
+    counter[1] += 1;
+  } else if (winner === 'd') {
+    counter[2] += 1;
+  }
+  $(".p1").text(counter[0].toString());
+  $(".p2").text(counter[1].toString());
+  $(".p3").text(counter[2].toString());
+}
+
+function getGrid() {
+  var arr = $(".cell").map(function() {
+    return $(this).text();
+  });
+  return $.makeArray(arr);
+}
+
+function winCheck(grid,player) {
+  return combos.some(function(c) {
+    return c.every(function(i) {
+      return grid[i] === player;
+    });
+  });
+}
+
+function checkBoard(grid) {
+  var bool = false;
+  if (grid === undefined) {
+    // Get Game Board
+    grid = getGrid();
+    bool = true;
+  }
+  // Check Wins
+  var win = false;
+  for (var j=0; j<players.length; j++) {
+    win = winCheck(grid,players[j]);
+    if (win) {
+      if (bool) {
+        winner = players[j];
+      }
+      return win;
+    }
+  }
+  // Check Draw
+  var draw = grid.reduce(function(a,b) {
+    return a + b;
+  },"");
+  if (draw.length === 9) {
+    winner = 'd';
+    return true;
+  }
+  return false;
+}
+
+function makeNextMove(board, location, piece) {
+  // <<Board>> is the game board expressed as a single array of 9 elements with the following form:
+  // [ 1  2  3 ]
+  // [ 4  5  6 ] ==>> [1,2,3,4,5,6,7,8,9]
+  // [ 7  8  9 ]
+  // <<Location>> refers to the *index* of the place on the board to place your piece ==>> int(0 to 8)
+  // <<Piece>> refers to the character your piece references ==>> "X" or "O"
+  var valid_location = [0,1,2,3,4,5,6,7,8];
+  if (board.length !== 9) {
+    return "Invalid board";
+  } else if (!(valid_location.includes(location))) {
+    return "Invalid location";
+  } else if (piece.length !== 1) {
+    return "Invalid piece";
+  } else if (board[location].length !== 0) {
+    return "Invalid move";
+  } else {
+    board[location] = piece;
+    return "Move complete!";
+  }
+}
 
 function checkBestMove() {
   var grid = getGrid();
@@ -132,149 +257,6 @@ function cpuMove() {
     cpuThinking = false;
     $(".status").text(status);
   },1000);
-}
-
-function getRandomInt(min, max) {
-  min = Math.ceil(min);
-  max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min)) + min;
-}
-
-function reset() {
-  winner = '';
-  $(".winner").toggle();
-  $(".cell").empty();
-  $(".board").on('click','.cell', function() {
-    if (cpuThinking) {
-      return;
-    }
-    var t = $(this).text();
-    if (t === "O") {
-      return;
-    }
-    if (t.length === 0) {
-      t = "X";
-    }
-    $(this).text(t);
-    var arr = getGrid();
-    if (checkBoard()) {
-      displayWinner();
-    } else {
-      cpuMove();
-    }
-  });
-}
-
-function getGrid() {
-  var arr = $(".cell").map(function() {
-    return $(this).text();
-  });
-  return $.makeArray(arr);
-}
-
-// function checkWin(grid, bool) {
-//   arr = [];
-//   for (var i = 0; i < grid.length; i++) {
-//     if (i < 9) {
-//       arr.push(grid[i]);
-//     }
-//   }
-//   grid = arr;
-//   if (
-//     (grid[3] === grid[4] && grid[4] === grid[5]) ||
-//     (grid[1] === grid[4] && grid[4] === grid[7]) ||
-//     (grid[0] === grid[4] && grid[4] === grid[8]) ||
-//     (grid[2] === grid[4] && grid[4] === grid[6])
-//   ) {
-//     winner = grid[4];
-//   } else if (
-//     (grid[0] === grid[1] && grid[1] === grid[2]) ||
-//     (grid[0] === grid[3] && grid[3] === grid[6])
-//   ) {
-//     winner = grid[0];
-//   } else if (
-//     (grid[2] === grid[5] && grid[5] === grid[8]) ||
-//     (grid[6] === grid[7] && grid[7] === grid[8])
-//   ) {
-//     winner = grid[8];
-//   }
-//   var a = grid.reduce(function(a,b) {
-//     return a + b;
-//   },"");
-//   if (winner.length === 1) {
-//     if (!bool) {
-//       winner = "";
-//     }
-//     return true;
-//   } else if (a.length === 9) {
-//     winner = 'd';
-//     return true;
-//   }
-// }
-
-function winCheck(grid,player) {
-  return combos.some(function(c) {
-    return c.every(function(i) {
-      return grid[i] === player;
-    });
-  });
-}
-
-function checkBoard(grid) {
-  var bool = false;
-  if (grid === undefined) {
-    // Get Game Board
-    grid = getGrid();
-    bool = true;
-  }
-  // Check Wins
-  var win = false;
-  for (var j=0; j<players.length; j++) {
-    win = winCheck(grid,players[j]);
-    if (win) {
-      if (bool) {
-        winner = players[j];
-      }
-      return win;
-    }
-  }
-  // Check Draw
-  var draw = grid.reduce(function(a,b) {
-    return a + b;
-  },"");
-  if (draw.length === 9) {
-    winner = 'd';
-    return true;
-  }
-  return false;
-}
-
-function displayWinner() {
-  var winString = "";
-  if (winner === "d") {
-    winString = "It's a draw!";
-  } else {
-    winString = winner === 'X' ? "You win!" : "CPU wins!";
-  }
-  updateCounter(winner);
-  var playButton = "<div class='play-again'>Play Again</div>";
-  $(".winner").text(winString);
-  $(".winner").append(playButton);
-  $(".winner").toggle();
-  $(".board").off('click','.cell');
-}
-
-function updateCounter(winner) {
-  if (winner === 'X') {
-    counter[0] += 1;
-  } else if (winner === 'O') {
-    counter[1] += 1;
-  } else if (winner === 'd') {
-    counter[2] += 1;
-  }
-  $(".p1").text(counter[0].toString());
-  $(".p2").text(counter[1].toString());
-  $(".p3").text(counter[2].toString());
 }
 
 $(function () {

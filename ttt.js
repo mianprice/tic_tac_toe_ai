@@ -1,11 +1,96 @@
+// Player Object
+function Player(piece) {
+  this.piece = piece;
+}
+
+// CPU Object
+function TTT_ai(piece) {
+  Player.call(this,piece);
+}
+
+TTT_ai.prototype = {
+  makeNextMove: function() {
+    cpuThinking = true;
+    var status = $(".status").text();
+    $(".status").text("CPU is thinking...");
+    setTimeout(function() {
+      var changed = false;
+      var move = "";
+      var ran = true;
+      var win_must, block_must, win_move, block_move;
+      var arr = getGrid();
+      for (var i = 0; i < arr.length; i++) {
+        if (arr[i].length === 0) {
+          var win_arr = JSON.parse(JSON.stringify(getGrid()));
+          win_arr[i] = "O";
+          win_must = checkBoard(win_arr);
+          if (win_must) {
+            win_move = indexToID(i);
+            ran = false;
+            break;
+          }
+        }
+      }
+      for (var j = 0; j < arr.length; j++) {
+        if (arr[j].length === 0) {
+          var block_arr = JSON.parse(JSON.stringify(getGrid()));
+          block_arr[j] = "X";
+          block_must = checkBoard(block_arr);
+          if (block_must) {
+            block_move = indexToID(j);
+            ran = false;
+            break;
+          }
+        }
+      }
+      if (!ran) {
+        if (win_must) {
+          move = win_move;
+        } else {
+          move = block_move;
+        }
+        $("#"+move).text("O");
+        if (checkBoard()) {
+          displayWinner();
+        }
+      } else {
+        bestMove = checkBestMove();
+        if (bestMove[0]) {
+          move = indexToID(bestMove[1]);
+          $("#"+move).text("O");
+          if (checkBoard()) {
+            displayWinner();
+          }
+        } else {
+          while (!changed) {
+            move = indexToID(getRandomInt(0,8));
+            var t = $("#"+move).text();
+            if (t.length === 0) {
+              t = "O";
+              changed = true;
+            }
+            $("#"+move).text(t);
+            if (checkBoard()) {
+              displayWinner();
+            }
+          }
+        }
+      }
+      cpuThinking = false;
+      $(".status").text(status);
+    },1000);
+  }
+};
+
 
 // VARIABLE DECLARATIONS
 var winner = '';
 var counter = [0,0,0];
-var possible = ["one","two","three","four","five","six","seven","eight","nine"];
 var cpuThinking = false;
-var p1 = 'X';
-var p2 = 'O';
+var p1 = new Player('X');
+console.log(p1.piece);
+var p2 = new TTT_ai('O');
+console.log(p2.piece);
 var players = [p1,p2];
 var combos = [
   [0,1,2],
@@ -69,7 +154,7 @@ function reset() {
     if (checkBoard()) {
       displayWinner();
     } else {
-      cpuMove();
+      players[1].makeNextMove();
     }
   });
 }
@@ -127,10 +212,10 @@ function checkBoard(grid) {
   // Check Wins
   var win = false;
   for (var j=0; j<players.length; j++) {
-    win = winCheck(grid,players[j]);
+    win = winCheck(grid,players[j].piece);
     if (win) {
       if (bool) {
-        winner = players[j];
+        winner = players[j].piece;
       }
       return win;
     }
@@ -168,6 +253,30 @@ function makeNextMove(board, location, piece) {
   }
 }
 
+function SampleRobot() {
+
+}
+
+// input - board (array of 9 elements), piece
+// return - index(number) location it wants to place piece
+// assumes has open space
+SampleRobot.prototype.makeMove = function(board, piece) {
+  var ind = getRandomInt(0,8);
+  var unchanged = true;
+  var loop_count = 0;
+  while (unchanged) {
+    if (board[ind].length === 0) {
+      return ind;
+    } else {
+      ind = getRandomInt(0,8);
+    }
+    loop_count++;
+    if (loop_count === 500) {
+      unchanged = false;
+    }
+  }
+};
+
 function checkBestMove() {
   var grid = getGrid();
   var second = [0,2,6,8];
@@ -183,81 +292,81 @@ function checkBestMove() {
   return [false];
 }
 
-function cpuMove() {
-  cpuThinking = true;
-  var status = $(".status").text();
-  $(".status").text("CPU is thinking...");
-  setTimeout(function() {
-    var changed = false;
-    var move = "";
-    var ran = true;
-    var win_must, block_must, win_move, block_move;
-    var arr = getGrid();
-    for (var i = 0; i < arr.length; i++) {
-      if (arr[i].length === 0) {
-        var win_arr = JSON.parse(JSON.stringify(getGrid()));
-        win_arr[i] = "O";
-        win_must = checkBoard(win_arr);
-        console.log(win_must);
-        if (win_must) {
-          win_move = indexToID(i);
-          console.log(win_move);
-          ran = false;
-          break;
-        }
-      }
-    }
-    for (var j = 0; j < arr.length; j++) {
-      if (arr[j].length === 0) {
-        var block_arr = JSON.parse(JSON.stringify(getGrid()));
-        block_arr[j] = "X";
-        block_must = checkBoard(block_arr);
-        console.log(block_must);
-        if (block_must) {
-          block_move = indexToID(j);
-          console.log(block_move);
-          ran = false;
-          break;
-        }
-      }
-    }
-    if (!ran) {
-      if (win_must) {
-        move = win_move;
-      } else {
-        move = block_move;
-      }
-      $("#"+move).text("O");
-      if (checkBoard()) {
-        displayWinner();
-      }
-    } else {
-      bestMove = checkBestMove();
-      if (bestMove[0]) {
-        move = indexToID(bestMove[1]);
-        $("#"+move).text("O");
-        if (checkBoard()) {
-          displayWinner();
-        }
-      } else {
-        while (!changed) {
-          move = possible[getRandomInt(0,8)];
-          var t = $("#"+move).text();
-          if (t.length === 0) {
-            t = "O";
-            changed = true;
-          }
-          $("#"+move).text(t);
-          if (checkBoard()) {
-            displayWinner();
-          }
-        }
-      }
-    }
-    cpuThinking = false;
-    $(".status").text(status);
-  },1000);
-}
+// function cpuMove() {
+//   cpuThinking = true;
+//   var status = $(".status").text();
+//   $(".status").text("CPU is thinking...");
+//   setTimeout(function() {
+//     var changed = false;
+//     var move = "";
+//     var ran = true;
+//     var win_must, block_must, win_move, block_move;
+//     var arr = getGrid();
+//     for (var i = 0; i < arr.length; i++) {
+//       if (arr[i].length === 0) {
+//         var win_arr = JSON.parse(JSON.stringify(getGrid()));
+//         win_arr[i] = "O";
+//         win_must = checkBoard(win_arr);
+//         console.log(win_must);
+//         if (win_must) {
+//           win_move = indexToID(i);
+//           console.log(win_move);
+//           ran = false;
+//           break;
+//         }
+//       }
+//     }
+//     for (var j = 0; j < arr.length; j++) {
+//       if (arr[j].length === 0) {
+//         var block_arr = JSON.parse(JSON.stringify(getGrid()));
+//         block_arr[j] = "X";
+//         block_must = checkBoard(block_arr);
+//         console.log(block_must);
+//         if (block_must) {
+//           block_move = indexToID(j);
+//           console.log(block_move);
+//           ran = false;
+//           break;
+//         }
+//       }
+//     }
+//     if (!ran) {
+//       if (win_must) {
+//         move = win_move;
+//       } else {
+//         move = block_move;
+//       }
+//       $("#"+move).text("O");
+//       if (checkBoard()) {
+//         displayWinner();
+//       }
+//     } else {
+//       bestMove = checkBestMove();
+//       if (bestMove[0]) {
+//         move = indexToID(bestMove[1]);
+//         $("#"+move).text("O");
+//         if (checkBoard()) {
+//           displayWinner();
+//         }
+//       } else {
+//         while (!changed) {
+//           move = indexToID(getRandomInt(0,8));
+//           var t = $("#"+move).text();
+//           if (t.length === 0) {
+//             t = "O";
+//             changed = true;
+//           }
+//           $("#"+move).text(t);
+//           if (checkBoard()) {
+//             displayWinner();
+//           }
+//         }
+//       }
+//     }
+//     cpuThinking = false;
+//     $(".status").text(status);
+//   },1000);
+// }
 
 $(function () {
   reset();

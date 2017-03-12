@@ -43,19 +43,47 @@ function drawCheck() {
   return str.length < 9;
 }
 
+function winCheck(grid,player) {
+  return combos.some(function(c) {
+    return c.every(function(i) {
+      return grid[i] === player;
+    });
+  });
+}
+
 var cpu1 = new SampleRobot("X");
 var cpu2 = new SampleRobot("O");
 
 var board = ["","","","","","","","",""];
+var combos = [
+  [0,1,2],
+  [3,4,5],
+  [6,7,8],
+  [0,3,6],
+  [1,4,7],
+  [2,5,8],
+  [0,4,8],
+  [2,4,6]
+];
 
 var firstPlayer = true;
+var cpu;
 while (drawCheck()) {
   if (firstPlayer) {
-    board[cpu1.makeMove(board)] = cpu1.piece;
+    cpu = cpu1;
   } else {
-    board[cpu2.makeMove(board)] = cpu2.piece;
+    cpu = cpu2;
+  }
+  board[cpu.makeMove(board)] = cpu.piece;
+  if (winCheck(board,cpu.piece)) {
+    outputBoard();
+    console.log(cpu.piece + " WINS!");
+    board[0] = "";
+    break;
   }
   firstPlayer = !firstPlayer;
   outputBoard();
 }
-outputBoard();
+if (!drawCheck()) {
+  console.log("It's a DRAW.");
+}

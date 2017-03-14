@@ -27,9 +27,11 @@ function UnbeatableRobot(piece) {
 }
 
 UnbeatableRobot.prototype.makeMove = function(board) {
-  var ind = -1;
+  var ind = [];
   var indices = [3,2,3,2,4,2,3,2,3];
   var toChange = [];
+  var wins = [];
+  var blocks = [];
   var changed = false;
   for (var i = 0; i < combos.length; i++) {
     var set = [board[combos[i][0]],board[combos[i][1]],board[combos[i][2]]];
@@ -42,25 +44,24 @@ UnbeatableRobot.prototype.makeMove = function(board) {
           changed = true;
         }
         return a + "0";
-      } else if (b.length === 1) {
-        return a + "1";
       } else {
-        return a;
+        return b.length === 1 ? a + "1" : a;
       }
     }.bind(this),"");
     changed = false;
-    if (status.includes("1") && !status.includes("0")) {
-      if (status.length === 2) {
-        return combos[i][set.indexOf("")];
+    if (status.length === 2) {
+      if (status.includes("1") && !status.includes("0")) {
+        blocks.push(combos[i][set.indexOf("")]);
+      } else if (status.includes("0") && !status.includes("1")) {
+        wins.push(combos[i][set.indexOf("")]);
       }
     }
   }
   toChange.forEach(function(element) {
     indices[element] --;
   });
-  if (ind === -1) {
+  if (wins.length + blocks.length === 0) {
     var max = 0;
-    ind = [];
     for (var i = 0; i < indices.length; i++) {
       if (board[i] === "") {
         if (indices[i] > max) {
@@ -72,6 +73,8 @@ UnbeatableRobot.prototype.makeMove = function(board) {
         }
       }
     }
+  } else {
+    ind = wins.length > 0 ? wins : blocks;
   }
   return ind[getRandomInt(0,ind.length)];
 };
@@ -84,10 +87,21 @@ function getRandomInt(min, max) {
 
 function outputBoard() {
   var out = JSON.parse(JSON.stringify(board));
+  var currentString = "";
+  var count = 0;
   while (out.length > 0) {
-    console.log(out.splice(0,3));
+    count++;
+    var x = out.shift ();
+    x = x === "" ? "_" : x;
+    currentString += "|";
+    currentString += x;
+    currentString += "|";
+    if (count % 3 === 0) {
+      currentString += "\n";
+    }
   }
-  console.log("\n");
+  currentString += "____________";
+  return currentString;
 }
 
 function drawCheck() {
@@ -106,14 +120,21 @@ function winCheck(grid,player) {
 }
 
 function playAGame() {
-  while (drawCheck()) {
+  while (drawCheck() && !winCheck(board,cpu1.piece) && !winCheck(board,cpu2.piece)) {
     if (firstPlayer) {
       cpu = cpu1;
     } else {
       cpu = cpu2;
     }
     board[cpu.makeMove(board)] = cpu.piece;
+    currentGame.push(outputBoard());
     if (winCheck(board,cpu.piece)) {
+      if (cpu.piece === "O") {
+        currentGame.forEach(function(element) {
+          console.log(element);
+        });
+        throw new Error("Random player won");
+      }
       board[0] = "";
       scoreboard[cpu.piece] += 1;
       break;
@@ -126,7 +147,7 @@ function playAGame() {
 }
 
 var cpu1 = new UnbeatableRobot("X");
-var cpu2 = new UnbeatableRobot("O");
+var cpu2 = new SampleRobot("O");
 var scoreboard = {
   "X":0,
   "O":0,
@@ -144,17 +165,20 @@ var combos = [
   [0,4,8],
   [2,4,6]
 ];
+var currentGame = [];
 
 var firstPlayer = true;
 var cpu;
 var gamecount = 0;
 
-while (gamecount < 100000) {
-  playAGame();
-  console.log(gamecount);
-  outputBoard();
-  var board = ["","","","","","","","",""];
+while (gamecount < 10000) {
   gamecount ++;
+  currentGame = [];
+  playAGame();
+  // if (winCheck(board,cpu2.piece)) {
+  //   outputBoard();
+  // }
+  var board = ["","","","","","","","",""];
 }
 
 console.log(scoreboard);

@@ -1,85 +1,84 @@
-// Player Object
-function Player(piece) {
+// Random AI
+function SampleRobot(piece) {
   this.piece = piece;
 }
 
-// CPU Object
-function TTT_ai(piece) {
-  Player.call(this,piece);
+// input - board (array of 9 elements), piece
+// return - index(number) location it wants to place piece
+// assumes has open space (Open space is an empty string)
+SampleRobot.prototype.makeMove = function(board) {
+  var ind = getRandomInt(0,9);
+  var unchanged = true;
+  var loop_count = 0;
+  while (unchanged) {
+    if (board[ind].length === 0) {
+      return ind;
+    } else {
+      ind = getRandomInt(0,9);
+    }
+    loop_count++;
+    if (loop_count === 500) {
+      unchanged = false;
+    }
+  }
+};
+
+// Intelligent AI
+function UnbeatableRobot(piece) {
+  this.piece = piece;
 }
 
-TTT_ai.prototype = {
-  makeNextMove: function() {
-    cpuThinking = true;
-    var status = $(".status").text();
-    $(".status").text("CPU is thinking...");
-    setTimeout(function() {
-      var changed = false;
-      var move = "";
-      var ran = true;
-      var win_must, block_must, win_move, block_move;
-      var arr = getGrid();
-      for (var i = 0; i < arr.length; i++) {
-        if (arr[i].length === 0) {
-          var win_arr = JSON.parse(JSON.stringify(getGrid()));
-          win_arr[i] = "O";
-          win_must = checkBoard(win_arr);
-          if (win_must) {
-            win_move = indexToID(i);
-            ran = false;
-            break;
-          }
-        }
-      }
-      for (var j = 0; j < arr.length; j++) {
-        if (arr[j].length === 0) {
-          var block_arr = JSON.parse(JSON.stringify(getGrid()));
-          block_arr[j] = "X";
-          block_must = checkBoard(block_arr);
-          if (block_must) {
-            block_move = indexToID(j);
-            ran = false;
-            break;
-          }
-        }
-      }
-      if (!ran) {
-        if (win_must) {
-          move = win_move;
+UnbeatableRobot.prototype.makeMove = function(board) {
+  var ind = [];
+  var indices = [3,2,3,2,4,2,3,2,3];
+  var toChange = [];
+  var wins = [];
+  var blocks = [];
+  var changed = false;
+  for (var i = 0; i < combos.length; i++) {
+    var set = [board[combos[i][0]],board[combos[i][1]],board[combos[i][2]]];
+    var status = set.reduce(function(a,b) {
+      if (b === this.piece) {
+        if (changed) {
+          toChange.push(combos[i][set.lastIndexOf(b)]);
         } else {
-          move = block_move;
+          toChange.push(combos[i][set.indexOf(b)]);
+          changed = true;
         }
-        $("#"+move).text("O");
-        if (checkBoard()) {
-          displayWinner();
-        }
+        return a + "0";
       } else {
-        bestMove = checkBestMove();
-        if (bestMove[0]) {
-          move = indexToID(bestMove[1]);
-          $("#"+move).text("O");
-          if (checkBoard()) {
-            displayWinner();
-          }
-        } else {
-          while (!changed) {
-            move = indexToID(getRandomInt(0,8));
-            var t = $("#"+move).text();
-            if (t.length === 0) {
-              t = "O";
-              changed = true;
-            }
-            $("#"+move).text(t);
-            if (checkBoard()) {
-              displayWinner();
-            }
-          }
+        return b.length === 1 ? a + "1" : a;
+      }
+    }.bind(this),"");
+    changed = false;
+    if (status.length === 2) {
+      if (status.includes("1") && !status.includes("0")) {
+        blocks.push(combos[i][set.indexOf("")]);
+      } else if (status.includes("0") && !status.includes("1")) {
+        wins.push(combos[i][set.indexOf("")]);
+      }
+    }
+  }
+  toChange.forEach(function(element) {
+    indices[element] --;
+  });
+  if (wins.length + blocks.length === 0) {
+    var max = 0;
+    for (var i = 0; i < indices.length; i++) {
+      if (board[i] === "") {
+        if (indices[i] > max) {
+          max = indices[i];
+          ind = [];
+          ind.push(i);
+        } else if (indices[i] === max) {
+          ind.push(i);
         }
       }
-      cpuThinking = false;
-      $(".status").text(status);
-    },1000);
+    }
+  } else {
+    ind = wins.length > 0 ? wins : blocks;
   }
+  return ind[getRandomInt(0,ind.length)];
 };
 
 
@@ -87,10 +86,8 @@ TTT_ai.prototype = {
 var winner = '';
 var counter = [0,0,0];
 var cpuThinking = false;
-var p1 = new Player('X');
-console.log(p1.piece);
-var p2 = new TTT_ai('O');
-console.log(p2.piece);
+var p1 = new SampleRobot('X');
+var p2 = new UnbeatableRobot('O');
 var players = [p1,p2];
 var combos = [
   [0,1,2],
@@ -102,6 +99,7 @@ var combos = [
   [0,4,8],
   [2,4,6]
 ];
+var simulation;
 
 // HELPER FUNCTIONS
 function indexToID(ind) {
@@ -136,42 +134,11 @@ function getRandomInt(min, max) {
 // GAME LOGIC
 function reset() {
   winner = '';
-  $(".winner").toggle();
   $(".cell").empty();
-  $(".board").on('click','.cell', function() {
-    if (cpuThinking) {
-      return;
-    }
-    var t = $(this).text();
-    if (t === "O") {
-      return;
-    }
-    if (t.length === 0) {
-      t = "X";
-    }
-    $(this).text(t);
-    var arr = getGrid();
-    if (checkBoard()) {
-      displayWinner();
-    } else {
-      players[1].makeNextMove();
-    }
-  });
 }
 
 function displayWinner() {
-  var winString = "";
-  if (winner === "d") {
-    winString = "It's a draw!";
-  } else {
-    winString = winner === 'X' ? "You win!" : "CPU wins!";
-  }
   updateCounter(winner);
-  var playButton = "<div class='play-again'>Play Again</div>";
-  $(".winner").text(winString);
-  $(".winner").append(playButton);
-  $(".winner").toggle();
-  $(".board").off('click','.cell');
 }
 
 function updateCounter(winner) {
@@ -202,23 +169,12 @@ function winCheck(grid,player) {
   });
 }
 
-function checkBoard(grid) {
-  var bool = false;
-  if (grid === undefined) {
-    // Get Game Board
-    grid = getGrid();
-    bool = true;
-  }
+function checkBoard(player, grid) {
   // Check Wins
-  var win = false;
-  for (var j=0; j<players.length; j++) {
-    win = winCheck(grid,players[j].piece);
-    if (win) {
-      if (bool) {
-        winner = players[j].piece;
-      }
-      return win;
-    }
+  win = winCheck(grid,player.piece);
+  if (win) {
+    winner = player.piece;
+    return true;
   }
   // Check Draw
   var draw = grid.reduce(function(a,b) {
@@ -231,147 +187,79 @@ function checkBoard(grid) {
   return false;
 }
 
-function makeNextMove(board, location, piece) {
-  // <<Board>> is the game board expressed as a single array of 9 elements with the following form:
-  // [ 1  2  3 ]
-  // [ 4  5  6 ] ==>> [1,2,3,4,5,6,7,8,9]
-  // [ 7  8  9 ]
-  // <<Location>> refers to the *index* of the place on the board to place your piece ==>> int(0 to 8)
-  // <<Piece>> refers to the character your piece references ==>> "X" or "O"
-  var valid_location = [0,1,2,3,4,5,6,7,8];
-  if (board.length !== 9) {
-    return "Invalid board";
-  } else if (!(valid_location.includes(location))) {
-    return "Invalid location";
-  } else if (piece.length !== 1) {
-    return "Invalid piece";
-  } else if (board[location].length !== 0) {
-    return "Invalid move";
-  } else {
-    board[location] = piece;
-    return "Move complete!";
-  }
-}
-
-function SampleRobot() {
-
-}
-
-// input - board (array of 9 elements), piece
-// return - index(number) location it wants to place piece
-// assumes has open space
-SampleRobot.prototype.makeMove = function(board, piece) {
-  var ind = getRandomInt(0,8);
-  var unchanged = true;
-  var loop_count = 0;
-  while (unchanged) {
-    if (board[ind].length === 0) {
-      return ind;
+function playAGame(player1, player2, firstplayer) {
+  // WAIT BEFORE EACH MOVE
+  // Can only use this for 1 game simulation
+  setTimeout(function() {
+    if (firstplayer === undefined) {
+      firstplayer = true;
+    }
+    if (firstplayer) {
+      player = player1;
     } else {
-      ind = getRandomInt(0,8);
+      player = player2;
     }
-    loop_count++;
-    if (loop_count === 500) {
-      unchanged = false;
+    var grid = getGrid();
+    if (!checkBoard(player, grid)) {
+      var index = indexToID(player.makeMove(grid));
+      $("#"+index).text(player.piece);
+      firstplayer = !firstplayer;
+      playAGame(player1,player2,firstplayer);
+    } else {
+      displayWinner();
     }
-  }
-};
+  },500);
 
-function checkBestMove() {
-  var grid = getGrid();
-  var second = [0,2,6,8];
-  if (grid[4].length === 0) {
-    return [true,4];
-  } else {
-    for (var x = 0; x < second.length; x++) {
-      if (grid[second[x]].length === 0) {
-        return [true,second[x]];
-      }
-    }
-  }
-  return [false];
+  // QUICK SIMULATION
+  // if (firstplayer === undefined) {
+  //   firstplayer = true;
+  // }
+  // if (firstplayer) {
+  //   player = player1;
+  // } else {
+  //   player = player2;
+  // }
+  // var grid = getGrid();
+  // if (!checkBoard(player, grid)) {
+  //   var index = indexToID(player.makeMove(grid));
+  //   $("#"+index).text(player.piece);
+  //   firstplayer = !firstplayer;
+  //   playAGame(player1,player2,firstplayer);
+  // } else {
+  //   displayWinner();
+  // }
 }
 
-// function cpuMove() {
-//   cpuThinking = true;
-//   var status = $(".status").text();
-//   $(".status").text("CPU is thinking...");
-//   setTimeout(function() {
-//     var changed = false;
-//     var move = "";
-//     var ran = true;
-//     var win_must, block_must, win_move, block_move;
-//     var arr = getGrid();
-//     for (var i = 0; i < arr.length; i++) {
-//       if (arr[i].length === 0) {
-//         var win_arr = JSON.parse(JSON.stringify(getGrid()));
-//         win_arr[i] = "O";
-//         win_must = checkBoard(win_arr);
-//         console.log(win_must);
-//         if (win_must) {
-//           win_move = indexToID(i);
-//           console.log(win_move);
-//           ran = false;
-//           break;
-//         }
-//       }
-//     }
-//     for (var j = 0; j < arr.length; j++) {
-//       if (arr[j].length === 0) {
-//         var block_arr = JSON.parse(JSON.stringify(getGrid()));
-//         block_arr[j] = "X";
-//         block_must = checkBoard(block_arr);
-//         console.log(block_must);
-//         if (block_must) {
-//           block_move = indexToID(j);
-//           console.log(block_move);
-//           ran = false;
-//           break;
-//         }
-//       }
-//     }
-//     if (!ran) {
-//       if (win_must) {
-//         move = win_move;
-//       } else {
-//         move = block_move;
-//       }
-//       $("#"+move).text("O");
-//       if (checkBoard()) {
-//         displayWinner();
-//       }
-//     } else {
-//       bestMove = checkBestMove();
-//       if (bestMove[0]) {
-//         move = indexToID(bestMove[1]);
-//         $("#"+move).text("O");
-//         if (checkBoard()) {
-//           displayWinner();
-//         }
-//       } else {
-//         while (!changed) {
-//           move = indexToID(getRandomInt(0,8));
-//           var t = $("#"+move).text();
-//           if (t.length === 0) {
-//             t = "O";
-//             changed = true;
-//           }
-//           $("#"+move).text(t);
-//           if (checkBoard()) {
-//             displayWinner();
-//           }
-//         }
-//       }
-//     }
-//     cpuThinking = false;
-//     $(".status").text(status);
-//   },1000);
-// }
+function displaySimOptions() {
+  $(".winner").empty();
+  var playButton = "<div class='play-again' id='simulate'>Run Simulation</div>";
+  var numGames = "<div class='play-again'><span># of Games<br>(MAX = 10000)</span><input type='text' value='1'></div>";
+  $(".winner").append(numGames);
+  $(".winner").append(playButton);
+}
 
 $(function () {
   reset();
   updateCounter();
-  $(".game").on('click','.play-again', function() {
-    reset();
+  displaySimOptions();
+  $(".game").on('click','#simulate', function() {
+    var games = $(".play-again input").val();
+    if ($(".play-again input").val() > 10000) {
+      games = 10000;
+    }
+    $(".winner").empty();
+    $('.winner').append("<div class='play-again' id='start'>Start Simulation</div>");
+    simulation = function runSimulation() {
+      $(".winner").empty();
+      $(".winner").append("<div class='play-again'>Currently simulating...</div>");
+      for (var i = 0; i < games; i++) {
+        reset();
+        playAGame(p1,p2);
+      }
+      displaySimOptions();
+    };
+  });
+  $(".game").on('click','#start', function() {
+    simulation();
   });
 });

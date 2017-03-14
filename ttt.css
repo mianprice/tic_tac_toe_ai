@@ -67,7 +67,7 @@
   width: 18vw;
   border: 3px solid black;
   font-weight: bold;
-  font-size: 200%;
+  font-size: 100%;
   padding-top: 5px;
   background-color:white;
 }
@@ -100,7 +100,28 @@
   margin: 1vw;
   background-color: lightgrey;
   border: 1px solid black;
+  padding: 1vw;
 }
+
+.play-again > span {
+  background-color: lightgrey;
+  font-size: 125%;
+}
+
+.play-again > input {
+  background-color: white;
+  width: 80%;
+  margin: 5px 0;
+}
+
+ #simulate {
+   font-size: 200%;
+ }
+
+ #simulate:hover {
+   background-color: darkgrey;
+   color: white;
+ }
 
 .cell {
   width: 15vw;

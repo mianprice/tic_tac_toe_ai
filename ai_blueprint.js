@@ -32,6 +32,7 @@ UnbeatableRobot.prototype.makeMove = function(board) {
   var toChange = [];
   var wins = [];
   var blocks = [];
+  var immediateBlocks = [];
   var changed = false;
   for (var i = 0; i < combos.length; i++) {
     var set = [board[combos[i][0]],board[combos[i][1]],board[combos[i][2]]];
@@ -44,23 +45,35 @@ UnbeatableRobot.prototype.makeMove = function(board) {
           changed = true;
         }
         return a + "0";
+      } else if (b.length === 1) {
+        return a + "1";
       } else {
-        return b.length === 1 ? a + "1" : a;
+        return a;
       }
     }.bind(this),"");
     changed = false;
-    if (status.length === 2) {
-      if (status.includes("1") && !status.includes("0")) {
-        blocks.push(combos[i][set.indexOf("")]);
-      } else if (status.includes("0") && !status.includes("1")) {
-        wins.push(combos[i][set.indexOf("")]);
+    if (status.includes("1") && !status.includes("0")) {
+      if (status.length === 2) {
+        immediateBlocks.push(combos[i][set.indexOf("")]);
       }
+      blocks.push(combos[i][set.indexOf("")]);
+      blocks.push(combos[i][set.lastIndexOf("")]);
+    } else if (status.includes("0") && !status.includes("1") && status.length === 2) {
+      wins.push(combos[i][set.indexOf("")]);
     }
   }
-  toChange.forEach(function(element) {
-    indices[element] --;
-  });
-  if (wins.length + blocks.length === 0) {
+  if (wins.length === 0) {
+
+    toChange.forEach(function(element) {
+      indices[element] --;
+    });
+    immediateBlocks.forEach(function(element) {
+      indices[element] *= 10;
+    });
+    blocks.forEach(function(element) {
+      indices[element] *= 2;
+    });
+
     var max = 0;
     for (var i = 0; i < indices.length; i++) {
       if (board[i] === "") {
@@ -74,7 +87,7 @@ UnbeatableRobot.prototype.makeMove = function(board) {
       }
     }
   } else {
-    ind = wins.length > 0 ? wins : blocks;
+    ind = wins;
   }
   return ind[getRandomInt(0,ind.length)];
 };
